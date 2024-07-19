@@ -1,7 +1,6 @@
 import streamlit as st
 from PyPDF2 import PdfReader
 import requests
-from bs4 import BeautifulSoup
 
 def extract_text_from_pdf(uploaded_file):
     try:
@@ -15,13 +14,12 @@ def extract_text_from_pdf(uploaded_file):
         return None
 
 def search_internet(query):
-    url = "https://api.duckduckgo.com/"
+    api_key = 'b0aa738ca511dad054f104718ad1df75550db7551970eace9a852d3f1cfbf13a'
+    url = "https://serpapi.com/search"
     params = {
         'q': query,
-        'format': 'json',
-        'pretty': 1,
-        'no_redirect': 1,
-        'no_html': 1,
+        'engine': 'duckduckgo',
+        'api_key': api_key,
     }
     try:
         response = requests.get(url, params=params)
@@ -29,16 +27,8 @@ def search_internet(query):
             data = response.json()
             st.write(data)  # For debugging: Show the entire response data
 
-            # Extract information
-            abstract = data.get('AbstractText', '')
-            related_topics = data.get('RelatedTopics', [])
-
-            # Process results
-            if abstract:
-                return abstract
-            elif related_topics:
-                results = ' '.join(topic['Text'] for topic in related_topics[:3] if 'Text' in topic)
-                return results if results else "No relevant results found."
+            if 'organic_results' in data and data['organic_results']:
+                return ' '.join(result['snippet'] for result in data['organic_results'][:3] if 'snippet' in result)
             else:
                 return "No results found."
         else:
