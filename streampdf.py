@@ -3,6 +3,7 @@ from PyPDF2 import PdfReader
 from io import BytesIO
 import requests
 from bs4 import BeautifulSoup
+import time
 import json
 from datetime import datetime
 
@@ -38,8 +39,12 @@ def search_internet(query):
     url = "https://html.duckduckgo.com/html/"
     params = {'q': query}
     headers = {'User-Agent': 'Mozilla/5.0'}
+    
     try:
         response = requests.get(url, params=params, headers=headers)
+        while response.status_code == 202:
+            time.sleep(10)  # Wait for 10 seconds before retrying
+            response = requests.get(url, params=params, headers=headers)  # Retry the request
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             snippets = soup.find_all('a', class_='result__snippet')
@@ -48,7 +53,7 @@ def search_internet(query):
             else:
                 return "No relevant results found."
         else:
-            return "Failed to retrieve results. Status code: " + str(response.status_code)
+            return f"Failed to retrieve results. Status code: {response.status_code}"
     except Exception as e:
         return f"Error during web search: {e}"
 
