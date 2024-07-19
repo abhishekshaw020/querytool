@@ -1,6 +1,7 @@
 import streamlit as st
 from PyPDF2 import PdfReader
-from duckduckgo_search import ddg
+import requests
+from bs4 import BeautifulSoup
 
 def extract_text_from_pdf(uploaded_file):
     try:
@@ -14,13 +15,29 @@ def extract_text_from_pdf(uploaded_file):
         return None
 
 def search_internet(query):
+    url = "https://api.duckduckgo.com/"
+    params = {
+        'q': query,
+        'format': 'json',
+        'pretty': 1,
+        'no_redirect': 1,
+        'no_html': 1,
+    }
     try:
-        results = ddg(query, max_results=3)
-        if results:
-            return ' '.join(result['body'] for result in results)
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            if 'AbstractText' in data and data['AbstractText']:
+                return data['AbstractText']
+            elif 'RelatedTopics' in data and data['RelatedTopics']:
+                return ' '.join(topic['Text'] for topic in data['RelatedTopics'][:3])
+            else:
+                return "No results found."
         else:
-            return "No results found."
-    except Exception as e:
+            return f"Failed to retrieve results. Status code: {response.status_code}"
+    except requests.exceptions.Timeout:
+        return "Error during web search: Timeout occurred."
+    except requests.exceptions.RequestException as e:
         return f"Error during web search: {e}"
 
 def main():
