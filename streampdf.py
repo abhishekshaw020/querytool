@@ -3,9 +3,12 @@ from PyPDF2 import PdfReader
 from io import BytesIO
 import requests
 from bs4 import BeautifulSoup
-import time
 import json
 from datetime import datetime
+import spacy
+
+# Load NLP model
+nlp = spacy.load("en_core_web_sm")
 
 def load_history():
     """Load the history of uploaded PDFs from a JSON file."""
@@ -28,40 +31,48 @@ def extract_text_from_pdf(uploaded_file):
         reader = PdfReader(pdf_file)
         text = ''
         for page in reader.pages:
-            text += page.extract_text() or ' '  # Append space if no text is extracted
+            text += page.extract_text() or ' '
         return text
     except Exception as e:
         st.error(f"Error reading PDF: {e}")
         return None
+
+def find_answer_in_text(text, question):
+    """Find an answer in the text using NLP."""
+    doc = nlp(text)
+    question_doc = nlp(question)
+    similarity = []
+
+    for sent in doc.sents:
+        if sent.text.strip():
+            similarity.append((sent, question_doc.similarity(sent)))
+
+    similarity = sorted(similarity, key=lambda x: x[1], reverse=True)
+
+    if similarity and similarity[0][1] > 0.1:  # Threshold for relevance
+        return str(similarity[0][0].text)
+    return None
 
 def search_internet(query):
     """Performs a web search and returns the top results."""
     url = "https://html.duckduckgo.com/html/"
     params = {'q': query}
     headers = {'User-Agent': 'Mozilla/5.0'}
-    
+
     try:
         response = requests.get(url, params=params, headers=headers)
-        while response.status_code == 202:
-            time.sleep(10)  # Wait for 10 seconds before retrying
-            response = requests.get(url, params=params, headers=headers)  # Retry the request
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             snippets = soup.find_all('a', class_='result__snippet')
-            if snippets:
-                return ' '.join(snippet.get_text() for snippet in snippets[:3])
-            else:
-                return "No relevant results found."
+            return ' '.join(snippet.get_text() for snippet in snippets[:3])
         else:
             return f"Failed to retrieve results. Status code: {response.status_code}"
     except Exception as e:
         return f"Error during web search: {e}"
 
 def main():
-    """Main function to run the Streamlit app."""
     st.title("PDF Reader and Query Tool")
-    
-    # Sidebar for uploading history
+
     st.sidebar.title("Upload History")
     history = load_history()
     if history:
@@ -76,7 +87,6 @@ def main():
         date_uploaded = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         text = extract_text_from_pdf(uploaded_file)
         
-        # Update history
         history.append({'filename': filename, 'date': date_uploaded})
         save_history(history)
         
@@ -85,9 +95,10 @@ def main():
             question = st.text_input("Ask a question about the PDF content:")
             if st.button("Answer Question"):
                 if question:
-                    if question.lower() in text.lower():
-                        st.success("Answer found in PDF.")
-                        st.write(question)  # Simplified response for demonstration
+                    answer = find_answer_in_text(text, question)
+                    if answer:
+                        st.success("Possible answer found in PDF:")
+                        st.write(answer)
                     else:
                         st.warning("Answer not found in PDF, searching on the internet...")
                         result = search_internet(question)
