@@ -14,7 +14,7 @@ def extract_text_from_pdf(uploaded_file):
         return None
 
 def search_internet(query):
-    api_key = 'your_api_key_here'
+    api_key = 'b0aa738ca511dad054f104718ad1df75550db7551970eace9a852d3f1cfbf13a'
     url = "https://serpapi.com/search"
     params = {
         'q': query,
