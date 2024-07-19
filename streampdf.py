@@ -14,7 +14,7 @@ def extract_text_from_pdf(uploaded_file):
         return None
 
 def search_internet(query):
-    api_key = 'b0aa738ca511dad054f104718ad1df75550db7551970eace9a852d3f1cfbf13a'
+    api_key = 'your_api_key_here'
     url = "https://serpapi.com/search"
     params = {
         'q': query,
@@ -25,8 +25,6 @@ def search_internet(query):
         response = requests.get(url, params=params)
         if response.status_code == 200:
             data = response.json()
-            st.write(data)  # For debugging: Show the entire response data
-
             if 'organic_results' in data and data['organic_results']:
                 return ' '.join(result['snippet'] for result in data['organic_results'][:3] if 'snippet' in result)
             else:
@@ -50,7 +48,6 @@ def main():
             question = st.text_input("Ask a question:")
             if st.button("Answer Question"):
                 if question:
-                    # Simple text search in PDF
                     if question.lower() in text.lower():
                         st.success("Answer found in PDF.")
                         st.write(question)  # Simplified response for demonstration
