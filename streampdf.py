@@ -23,6 +23,7 @@ def search_internet(query):
         response = requests.get(url, params=params, headers=headers, timeout=10)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
+            st.write("HTML content fetched successfully.")  # Debugging line to check HTML content
             snippets = soup.find_all('a', class_='result__snippet')
             if snippets:
                 return ' '.join(snippet.get_text() for snippet in snippets[:3])  # return the first 3 results
