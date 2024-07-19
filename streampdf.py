@@ -27,10 +27,18 @@ def search_internet(query):
         response = requests.get(url, params=params)
         if response.status_code == 200:
             data = response.json()
-            if 'AbstractText' in data and data['AbstractText']:
-                return data['AbstractText']
-            elif 'RelatedTopics' in data and data['RelatedTopics']:
-                return ' '.join(topic['Text'] for topic in data['RelatedTopics'][:3])
+            st.write(data)  # For debugging: Show the entire response data
+
+            # Extract information
+            abstract = data.get('AbstractText', '')
+            related_topics = data.get('RelatedTopics', [])
+
+            # Process results
+            if abstract:
+                return abstract
+            elif related_topics:
+                results = ' '.join(topic['Text'] for topic in related_topics[:3] if 'Text' in topic)
+                return results if results else "No relevant results found."
             else:
                 return "No results found."
         else:
