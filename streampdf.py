@@ -31,7 +31,7 @@ def extract_text_from_pdf(uploaded_file):
         reader = PdfReader(pdf_file)
         text = ''
         for page in reader.pages:
-            text += page.extract_text() or ' '
+            text += page.extract_text() or ' '  # Append space if no text is extracted
         return text
     except Exception as e:
         st.error(f"Error reading PDF: {e}")
@@ -51,7 +51,7 @@ def find_answer_in_text(text, question):
 
     if similarity and similarity[0][1] > 0.1:  # Threshold for relevance
         return str(similarity[0][0].text)
-    return None
+    return "No relevant answer found in PDF."
 
 def search_internet(query):
     """Performs a web search and returns the top results."""
