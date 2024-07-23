@@ -2,6 +2,8 @@ import streamlit as st
 from PyPDF2 import PdfReader
 import openai
 
+openai.api_key = 'sk-None-OrvuMAWtcbGursdUyHXaT3BlbkFJgtjsgyIWowtQdjXzGmU4'
+
 def extract_text_from_pdf(uploaded_file):
     try:
         reader = PdfReader(uploaded_file)
@@ -13,24 +15,16 @@ def extract_text_from_pdf(uploaded_file):
         st.error(f"Error reading PDF: {e}")
         return None
 
-def answer_question_with_openai(question, context, api_key):
-    openai.api_key = api_key
-
-    prompt = f"Context: {context}\n\nQuestion: {question}\n\nAnswer:"
-
+def ask_openai(question):
     try:
         response = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=prompt,
-            max_tokens=150,
-            n=1,
-            stop=None,
-            temperature=0.7
+            model="text-davinci-003",
+            prompt=question,
+            max_tokens=150
         )
-        answer = response.choices[0].text.strip()
-        return answer
+        return response.choices[0].text.strip()
     except Exception as e:
-        return f"Error with OpenAI API: {e}"
+        return f"Error querying OpenAI: {e}"
 
 def main():
     st.title("Query Tool by Aingenious")
@@ -48,10 +42,9 @@ def main():
                         st.success("Answer found in PDF.")
                         st.write(question)  # Simplified response for demonstration
                     else:
-                        st.warning("Answer not found in PDF, generating a response using OpenAI...")
-                        api_key = "sk-None-OrvuMAWtcbGursdUyHXaT3BlbkFJgtjsgyIWowtQdjXzGmU4"  # Replace with your actual OpenAI API key
-                        result = answer_question_with_openai(question, text, api_key)
-                        st.write(result)
+                        st.warning("Answer not found in PDF, querying OpenAI for further assistance...")
+                        openai_result = ask_openai(question)
+                        st.write(openai_result)
                 else:
                     st.warning("Please enter a question to get an answer.")
 
