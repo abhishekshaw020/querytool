@@ -1,6 +1,6 @@
 import streamlit as st
 from PyPDF2 import PdfReader
-import requests
+import openai
 
 def extract_text_from_pdf(uploaded_file):
     try:
@@ -13,28 +13,24 @@ def extract_text_from_pdf(uploaded_file):
         st.error(f"Error reading PDF: {e}")
         return None
 
-def search_internet(query):
-    api_key = 'b0aa738ca511dad054f104718ad1df75550db7551970eace9a852d3f1cfbf13a'
-    url = "https://serpapi.com/search"
-    params = {
-        'q': query,
-        'engine': 'duckduckgo',
-        'api_key': api_key,
-    }
+def answer_question_with_openai(question, context, api_key):
+    openai.api_key = api_key
+
+    prompt = f"Context: {context}\n\nQuestion: {question}\n\nAnswer:"
+
     try:
-        response = requests.get(url, params=params)
-        if response.status_code == 200:
-            data = response.json()
-            if 'organic_results' in data and data['organic_results']:
-                return ' '.join(result['snippet'] for result in data['organic_results'][:3] if 'snippet' in result)
-            else:
-                return "No results found."
-        else:
-            return f"Failed to retrieve results. Status code: {response.status_code}"
-    except requests.exceptions.Timeout:
-        return "Error during web search: Timeout occurred."
-    except requests.exceptions.RequestException as e:
-        return f"Error during web search: {e}"
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=prompt,
+            max_tokens=150,
+            n=1,
+            stop=None,
+            temperature=0.7
+        )
+        answer = response.choices[0].text.strip()
+        return answer
+    except Exception as e:
+        return f"Error with OpenAI API: {e}"
 
 def main():
     st.title("Query Tool by Aingenious")
@@ -52,8 +48,9 @@ def main():
                         st.success("Answer found in PDF.")
                         st.write(question)  # Simplified response for demonstration
                     else:
-                        st.warning("Answer not found in PDF, searching on the internet...")
-                        result = search_internet(question)
+                        st.warning("Answer not found in PDF, generating a response using OpenAI...")
+                        api_key = "sk-None-OrvuMAWtcbGursdUyHXaT3BlbkFJgtjsgyIWowtQdjXzGmU4"  # Replace with your actual OpenAI API key
+                        result = answer_question_with_openai(question, text, api_key)
                         st.write(result)
                 else:
                     st.warning("Please enter a question to get an answer.")
